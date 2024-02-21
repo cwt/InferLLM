@@ -153,26 +153,26 @@ TaskSet llm_matmul_compute_int4_float(
 
                     int ret;
                     VSET1(e32, m1);
-                    asm volatile("vmv.s.x v0, x0\n");
+                    asm volatile("th.vmv.s.x v0, x0\n");
                     auto pxx = px.qs;
                     auto pyy = py.qs;
                     for (int sz = 0; sz < QK80;) {
                         int rsz = QK80 - sz;
                         int vl;
                         asm volatile(
-                                "vsetvl        x0, %[sz4], %[vt32]\n"  // load q4
-                                "vlbu.v        v16,  (%[x])\n"
-                                "vand.vi       v24, v16, 0b1111\n"  // save low part
-                                "vsrl.vi       v16, v16, 4\n"
-                                "vsll.vi       v16, v16, 16\n"  // make high part
-                                "vor.vv        v16, v16, v24\n"
+                                "th.vsetvl        x0, %[sz4], %[vt32]\n"  // load q4
+                                "th.vlbu.v        v16,  (%[x])\n"
+                                "th.vand.vi       v24, v16, 0b1111\n"  // save low part
+                                "th.vsrl.vi       v16, v16, 4\n"
+                                "th.vsll.vi       v16, v16, 16\n"  // make high part
+                                "th.vor.vv        v16, v16, v24\n"
 
-                                "vsetvl        %[vl], %[sz8], %[vt16]\n"  // load q8
-                                "vadd.vi       v16, v16, -8\n"
-                                "vlb.v         v24,  (%[y])\n"
+                                "th.vsetvl        %[vl], %[sz8], %[vt16]\n"  // load q8
+                                "th.vadd.vi       v16, v16, -8\n"
+                                "th.vlb.v         v24,  (%[y])\n"
 
-                                "vmul.vv       v16, v16, v24\n"  // mul and sum
-                                "vwredsum.vs   v0, v16, v0\n"
+                                "th.vmul.vv       v16, v16, v24\n"  // mul and sum
+                                "th.vwredsum.vs   v0, v16, v0\n"
                                 : [vl] "=r"(vl)
                                 : [sz4] "r"(rsz / 2), [vt32] "r"(vt32), [sz8] "r"(rsz),
                                   [vt16] "r"(vt16), [x] "r"(pxx), [y] "r"(pyy)
@@ -182,7 +182,7 @@ TaskSet llm_matmul_compute_int4_float(
                         pyy += sz;
                     }
                     VSET1(e32, m1);
-                    asm volatile("vmv.x.s %[init], v0\n" : [init] "=r"(ret));
+                    asm volatile("th.vmv.x.s %[init], v0\n" : [init] "=r"(ret));
                     sumf += px.d * py.d * ret;
                 }
                 dst[m * N + n] = sumf;
@@ -223,18 +223,18 @@ TaskSet llm_matmul_compute_int8_float(
                     auto& py = y[m * q8off + i];
                     int ret;
                     VSET1(e32, m1);
-                    asm volatile("vmv.s.x v0, x0\n");
+                    asm volatile("th.vmv.s.x v0, x0\n");
                     auto pxx = px.qs;
                     auto pyy = py.qs;
                     for (int sz = 0; sz < QK80;) {
                         int rsz = QK80 - sz;
                         int vl;
                         asm volatile(
-                                "vsetvl        %[vl], %[sz8], %[vt16]\n"  // load q8
-                                "vlb.v         v16,  (%[x])\n"
-                                "vlb.v         v24,  (%[y])\n"
-                                "vmul.vv       v16, v16, v24\n"  // mul and sum
-                                "vwredsum.vs   v0, v16, v0\n"
+                                "th.vsetvl        %[vl], %[sz8], %[vt16]\n"  // load q8
+                                "th.vlb.v         v16,  (%[x])\n"
+                                "th.vlb.v         v24,  (%[y])\n"
+                                "th.vmul.vv       v16, v16, v24\n"  // mul and sum
+                                "th.vwredsum.vs   v0, v16, v0\n"
                                 : [vl] "=r"(vl)
                                 : [sz8] "r"(rsz), [vt16] "r"(vt16), [x] "r"(pxx),
                                   [y] "r"(pyy)
@@ -244,7 +244,7 @@ TaskSet llm_matmul_compute_int8_float(
                         pyy += vl;
                     }
                     VSET1(e32, m1);
-                    asm volatile("vmv.x.s %[init], v0\n" : [init] "=r"(ret));
+                    asm volatile("th.vmv.x.s %[init], v0\n" : [init] "=r"(ret));
                     sumf += px.d * py.d * ret;
                 }
                 dst[m * N + n] = sumf;
